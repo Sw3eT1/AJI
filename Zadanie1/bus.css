@@ -43,6 +43,18 @@ html,body{
 .cloud--2{top:14%;left:28%;transform:scale(.9)}
 .cloud--3{top:18%;left:62%;transform:scale(1.05)}
 
+.cloud--1 .c:nth-child(odd){ width: 50px; height: 50px; }
+.cloud--2 .c:nth-child(odd){ width: 40px; height: 40px; }
+.cloud--3 .c:nth-child(odd){ width: 60px; height: 60px; }
+
+.cloud--1 .c:nth-child(2){ width: 70px; height: 70px; }
+.cloud--2 .c:nth-child(2){ width: 60px; height: 60px; }
+.cloud--3 .c:nth-child(2){ width: 80px; height: 80px; }
+
+.cloud--1 .c:nth-child(2), .cloud--1 .c:nth-child(3){ margin-left: -20px; }
+.cloud--2 .c:nth-child(2), .cloud--2 .c:nth-child(3){ margin-left: -15px; }
+.cloud--3 .c:nth-child(2), .cloud--3 .c:nth-child(3){ margin-left: -25px; }
+
 
 .grass-foreground{
     position:absolute;
