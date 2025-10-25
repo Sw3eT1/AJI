@@ -26,57 +26,70 @@ let initList = function () {
 
 initList();
 
+document.getElementById("inputForm").addEventListener("submit", function(event) {
+    event.preventDefault();
+    addTodo();
+});
+
 let updateTodoList = function () {
     const tableBody = document.querySelector("#todoListView tbody");
     const filterValue = document.getElementById("inputSearch").value.toLowerCase();
 
-    // clear table
+    const filterFrom = document.getElementById("filterFrom").value;
+    const filterTo = document.getElementById("filterTo").value;
+
+    const fromDate = filterFrom ? new Date(filterFrom) : null;
+    const toDate = filterTo ? new Date(filterTo) : null;
+
     tableBody.innerHTML = "";
 
-    todoList.forEach((todo, index) => {
-        if (
-            filterValue === "" ||
+    const filteredTodos = todoList.filter(todo => {
+        const titleMatch =
             todo.title.toLowerCase().includes(filterValue) ||
-            todo.description.toLowerCase().includes(filterValue)
-        ) {
-            const row = document.createElement("tr");
+            todo.description.toLowerCase().includes(filterValue) ||
+            filterValue === "";
 
-            // title
-            const tdTitle = document.createElement("td");
-            tdTitle.textContent = todo.title;
-            row.appendChild(tdTitle);
+        const todoDate = new Date(todo.dueDate);
 
-            // description
-            const tdDesc = document.createElement("td");
-            tdDesc.textContent = todo.description;
-            row.appendChild(tdDesc);
+        const fromMatch = fromDate ? todoDate >= fromDate : true;
+        const toMatch = toDate ? todoDate <= toDate : true;
 
-            // place
-            const tdPlace = document.createElement("td");
-            tdPlace.textContent = todo.place;
-            row.appendChild(tdPlace);
+        return titleMatch && fromMatch && toMatch;
+    });
 
-            // due date
-            const tdDate = document.createElement("td");
-            const date = new Date(todo.dueDate);
-            tdDate.textContent = date.toLocaleDateString();
-            row.appendChild(tdDate);
+    filteredTodos.forEach((todo) => {
+        const row = document.createElement("tr");
 
-            // delete button
-            const tdAction = document.createElement("td");
-            const btnDelete = document.createElement("button");
-            btnDelete.textContent = "Delete";
-            btnDelete.className = "btn btn-sm btn-danger";
-            btnDelete.onclick = () => deleteTodo(index);
-            tdAction.appendChild(btnDelete);
-            row.appendChild(tdAction);
+        const tdTitle = document.createElement("td");
+        tdTitle.textContent = todo.title;
+        row.appendChild(tdTitle);
 
-            tableBody.appendChild(row);
-        }
+        const tdDesc = document.createElement("td");
+        tdDesc.textContent = todo.description;
+        row.appendChild(tdDesc);
+
+        const tdPlace = document.createElement("td");
+        tdPlace.textContent = todo.place;
+        row.appendChild(tdPlace);
+
+        const tdDate = document.createElement("td");
+        const date = new Date(todo.dueDate);
+        tdDate.textContent = date.toLocaleDateString();
+        row.appendChild(tdDate);
+
+        const tdAction = document.createElement("td");
+        const btnDelete = document.createElement("button");
+        btnDelete.textContent = "Delete";
+        btnDelete.className = "btn btn-sm btn-danger";
+        btnDelete.onclick = () => deleteTodo(todoList.indexOf(todo));
+        tdAction.appendChild(btnDelete);
+        row.appendChild(tdAction);
+
+        tableBody.appendChild(row);
     });
 };
 
-// Refresh every 1s
+
 setInterval(updateTodoList, 1000);
 
 let deleteTodo = function (index) {
@@ -104,3 +117,10 @@ let addTodo = function () {
     window.localStorage.setItem("todos", JSON.stringify(todoList));
     updateTodoList();
 };
+
+window.addEventListener("DOMContentLoaded", () => {
+    const inputDate = document.getElementById("inputDate");
+
+    inputDate.min = new Date().toISOString().split("T")[0];
+});
+

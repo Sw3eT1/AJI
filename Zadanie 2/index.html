@@ -25,7 +25,7 @@
         <div class="form-row">
             <div class="form-group col-md-3">
                 <label for="inputTitle">Title</label>
-                <input type="text" id="inputTitle" class="form-control" placeholder="Enter title">
+                <input type="text" id="inputTitle" class="form-control" placeholder="Enter title" required>
             </div>
 
             <div class="form-group col-md-3">
@@ -40,11 +40,11 @@
 
             <div class="form-group col-md-2">
                 <label for="inputDate">Due date</label>
-                <input type="date" id="inputDate" class="form-control">
+                <input type="date" id="inputDate" class="form-control" required>
             </div>
 
             <div class="form-group col-md-2 d-flex align-items-end">
-                <button type="button" class="btn btn-primary btn-block" onclick="addTodo()">Add</button>
+                <button type="submit" class="btn btn-primary btn-block">Add</button>
             </div>
         </div>
     </form>
@@ -56,6 +56,19 @@
         </div>
         <label for="inputSearch"></label><input type="text" id="inputSearch" class="form-control" placeholder="Type your search here...">
     </div>
+
+    <!-- DATE FILTERS -->
+    <div class="form-row mb-4">
+        <div class="col-md-3">
+            <label for="filterFrom">From date</label>
+            <input type="date" id="filterFrom" class="form-control">
+        </div>
+        <div class="col-md-3">
+            <label for="filterTo">To date</label>
+            <input type="date" id="filterTo" class="form-control">
+        </div>
+    </div>
+
 
     <!-- TABLE -->
     <table id="todoListView" class="table table-striped table-bordered shadow-sm">
