@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="aea9f214-0fc3-45be-8fa4-0e2b626b7c54" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Zadanie 2/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/Zadanie 2/index.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Zadanie 2/scripts.js" beforeDir="false" afterPath="$PROJECT_DIR$/Zadanie 2/scripts.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -78,7 +77,7 @@
       <updated>1760038557688</updated>
       <workItem from="1760038558925" duration="3822000" />
       <workItem from="1761070718521" duration="2537000" />
-      <workItem from="1761407268104" duration="2186000" />
+      <workItem from="1761407268104" duration="3659000" />
     </task>
     <servers />
   </component>
@@ -90,7 +89,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/Zadanie 2/scripts.js</url>
-          <line>8</line>
+          <line>12</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
       </breakpoints>

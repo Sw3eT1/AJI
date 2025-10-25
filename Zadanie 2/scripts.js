@@ -1,35 +1,44 @@
+const BIN_ID = '68fcfc61d0ea881f40bb3184';
+const API_KEY = '$2a$10$UfZ4hW99G4WeXM6YCi9usOAIzwMUoEWNyJHpObNEj/hKulP3wXipW';
+const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
 let todoList = [];
 
 let initList = function () {
-    let savedList = window.localStorage.getItem("todos");
-    if (savedList) {
-        todoList = JSON.parse(savedList);
-    } else {
-        todoList.push(
-            {
-                title: "Learn JS",
-                description: "Create a demo application for my TODOs",
-                place: "445",
-                category: '',
-                dueDate: new Date(2024, 10, 16)
-            },
-            {
-                title: "Lecture test",
-                description: "Quick test from the first three lectures",
-                place: "F6",
-                category: '',
-                dueDate: new Date(2024, 10, 17)
+    const req = new XMLHttpRequest();
+    req.onreadystatechange = function () {
+        if (req.readyState === XMLHttpRequest.DONE) {
+            if (req.status === 200) {
+                const response = JSON.parse(req.responseText);
+                todoList = response.record || [];
+                updateTodoList();
+                console.log("Loaded todos from JSONBin");
+            } else {
+                console.error("Error loading data from JSONBin:", req.status);
             }
-        );
-    }
+        }
+    };
+    req.open("GET", `${BIN_URL}/latest`, true);
+    req.setRequestHeader("X-Master-Key", API_KEY);
+    req.send();
 };
 
-initList();
-
-document.getElementById("inputForm").addEventListener("submit", function(event) {
-    event.preventDefault();
-    addTodo();
-});
+let updateJSONbin = function () {
+    const req = new XMLHttpRequest();
+    req.onreadystatechange = function () {
+        if (req.readyState === XMLHttpRequest.DONE) {
+            if (req.status === 200) {
+                console.log("JSONBin updated successfully");
+            } else {
+                console.error("Error updating JSONBin:", req.status);
+            }
+        }
+    };
+    req.open("PUT", BIN_URL, true);
+    req.setRequestHeader("Content-Type", "application/json");
+    req.setRequestHeader("X-Master-Key", API_KEY);
+    req.send(JSON.stringify(todoList));
+};
 
 let updateTodoList = function () {
     const tableBody = document.querySelector("#todoListView tbody");
@@ -50,7 +59,6 @@ let updateTodoList = function () {
             filterValue === "";
 
         const todoDate = new Date(todo.dueDate);
-
         const fromMatch = fromDate ? todoDate >= fromDate : true;
         const toMatch = toDate ? todoDate <= toDate : true;
 
@@ -89,12 +97,9 @@ let updateTodoList = function () {
     });
 };
 
-
-setInterval(updateTodoList, 1000);
-
 let deleteTodo = function (index) {
     todoList.splice(index, 1);
-    window.localStorage.setItem("todos", JSON.stringify(todoList));
+    updateJSONbin();
     updateTodoList();
 };
 
@@ -104,23 +109,42 @@ let addTodo = function () {
     const inputPlace = document.getElementById("inputPlace");
     const inputDate = document.getElementById("inputDate");
 
+    if (!inputTitle.value.trim() || !inputDate.value) {
+        alert("Please fill in both the title and due date!");
+        return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDate = new Date(inputDate.value);
+    if (selectedDate < today) {
+        alert("You cannot select a date in the past!");
+        return;
+    }
+
     const newTodo = {
         title: inputTitle.value,
         description: inputDescription.value,
         place: inputPlace.value,
         category: '',
-        dueDate: new Date(inputDate.value)
+        dueDate: selectedDate
     };
 
     todoList.push(newTodo);
     document.getElementById("inputForm").reset();
-    window.localStorage.setItem("todos", JSON.stringify(todoList));
+    updateJSONbin();
     updateTodoList();
 };
 
-window.addEventListener("DOMContentLoaded", () => {
-    const inputDate = document.getElementById("inputDate");
-
-    inputDate.min = new Date().toISOString().split("T")[0];
+document.getElementById("inputForm").addEventListener("submit", function(event) {
+    event.preventDefault();
+    addTodo();
 });
 
+window.addEventListener("DOMContentLoaded", () => {
+    const inputDate = document.getElementById("inputDate");
+    inputDate.min = new Date().toISOString().split("T")[0];
+    initList();
+});
+
+setInterval(updateTodoList, 1000);
