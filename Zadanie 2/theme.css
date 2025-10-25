@@ -1,0 +1,47 @@
+:root {
+    --appRadius: 1rem;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+h1 {
+    font-weight: 600;
+}
+
+.table {
+    border-radius: var(--appRadius);
+    overflow: hidden;
+}
+
+.table thead th {
+    background-color: #343a40;
+    color: white;
+    text-align: center;
+}
+
+.table tbody td {
+    vertical-align: middle;
+    text-align: center;
+}
+
+.btn-danger {
+    padding: 4px 10px;
+}
+
+#inputForm label {
+    font-weight: 500;
+}
+
+#inputForm {
+    background-color: #fff;
+    border-radius: var(--appRadius);;
+}
+
+.input-group-text {
+    background-color: #007bff;
+    color: white;
+    font-weight: 500;
+    margin-right: 20px;
+}

@@ -1,97 +1,106 @@
 let todoList = [];
 
-let initList = function() {
-
+let initList = function () {
     let savedList = window.localStorage.getItem("todos");
-    if (savedList != null)
+    if (savedList) {
         todoList = JSON.parse(savedList);
-    else
+    } else {
         todoList.push(
             {
                 title: "Learn JS",
-                description: "Create a demo application for my TODO's",
+                description: "Create a demo application for my TODOs",
                 place: "445",
                 category: '',
-                dueDate: new Date(2024,10,16)
+                dueDate: new Date(2024, 10, 16)
             },
             {
                 title: "Lecture test",
                 description: "Quick test from the first three lectures",
                 place: "F6",
                 category: '',
-                dueDate: new Date(2024,10,17)
+                dueDate: new Date(2024, 10, 17)
             }
-            // of course the lecture test mentioned above will not take place
         );
-}
+    }
+};
 
 initList();
 
-let updateTodoList = function() {
-    let todoListDiv =
-        document.getElementById("todoListView");
+let updateTodoList = function () {
+    const tableBody = document.querySelector("#todoListView tbody");
+    const filterValue = document.getElementById("inputSearch").value.toLowerCase();
 
-    //remove all elements
-    while (todoListDiv.firstChild) {
-        todoListDiv.removeChild(todoListDiv.firstChild);
-    }
+    // clear table
+    tableBody.innerHTML = "";
 
-    let filterInput = document.getElementById("inputSearch");
-
-    //add all elements
-    for (let todo in todoList) {
+    todoList.forEach((todo, index) => {
         if (
-            (filterInput.value === "") ||
-            (todoList[todo].title.includes(filterInput.value)) ||
-            (todoList[todo].description.includes(filterInput.value))
+            filterValue === "" ||
+            todo.title.toLowerCase().includes(filterValue) ||
+            todo.description.toLowerCase().includes(filterValue)
         ) {
-            let newElement = document.createElement("p");
-            let newContent = document.createTextNode(todoList[todo].title + " " +
-                todoList[todo].description);
-            newElement.appendChild(newContent);
-            todoListDiv.appendChild(newElement);
+            const row = document.createElement("tr");
 
-            let newDeleteButton = document.createElement("input");
-            newDeleteButton.type = "button";
-            newDeleteButton.value = "x";
-            newDeleteButton.addEventListener("click",
-                function() {
-                    deleteTodo(todo);
-                });
-            newElement.appendChild(newDeleteButton);
+            // title
+            const tdTitle = document.createElement("td");
+            tdTitle.textContent = todo.title;
+            row.appendChild(tdTitle);
+
+            // description
+            const tdDesc = document.createElement("td");
+            tdDesc.textContent = todo.description;
+            row.appendChild(tdDesc);
+
+            // place
+            const tdPlace = document.createElement("td");
+            tdPlace.textContent = todo.place;
+            row.appendChild(tdPlace);
+
+            // due date
+            const tdDate = document.createElement("td");
+            const date = new Date(todo.dueDate);
+            tdDate.textContent = date.toLocaleDateString();
+            row.appendChild(tdDate);
+
+            // delete button
+            const tdAction = document.createElement("td");
+            const btnDelete = document.createElement("button");
+            btnDelete.textContent = "Delete";
+            btnDelete.className = "btn btn-sm btn-danger";
+            btnDelete.onclick = () => deleteTodo(index);
+            tdAction.appendChild(btnDelete);
+            row.appendChild(tdAction);
+
+            tableBody.appendChild(row);
         }
-    }
-}
+    });
+};
 
+// Refresh every 1s
 setInterval(updateTodoList, 1000);
 
-let deleteTodo = function(index) {
-    todoList.splice(index,1);
+let deleteTodo = function (index) {
+    todoList.splice(index, 1);
     window.localStorage.setItem("todos", JSON.stringify(todoList));
-}
+    updateTodoList();
+};
 
-let addTodo = function() {
-    //get the elements in the form
-    let inputTitle = document.getElementById("inputTitle");
-    let inputDescription = document.getElementById("inputDescription");
-    let inputPlace = document.getElementById("inputPlace");
-    let inputDate = document.getElementById("inputDate");
-    //get the values from the form
-    let newTitle = inputTitle.value;
-    let newDescription = inputDescription.value;
-    let newPlace = inputPlace.value;
-    let newDate = new Date(inputDate.value);
-    //create new item
-    let newTodo = {
-        title: newTitle,
-        description: newDescription,
-        place: newPlace,
+let addTodo = function () {
+    const inputTitle = document.getElementById("inputTitle");
+    const inputDescription = document.getElementById("inputDescription");
+    const inputPlace = document.getElementById("inputPlace");
+    const inputDate = document.getElementById("inputDate");
+
+    const newTodo = {
+        title: inputTitle.value,
+        description: inputDescription.value,
+        place: inputPlace.value,
         category: '',
-        dueDate: newDate
+        dueDate: new Date(inputDate.value)
     };
-    //add item to the list
+
     todoList.push(newTodo);
-    let form = document.getElementById("inputForm");
-    form.reset()
+    document.getElementById("inputForm").reset();
     window.localStorage.setItem("todos", JSON.stringify(todoList));
-}
+    updateTodoList();
+};

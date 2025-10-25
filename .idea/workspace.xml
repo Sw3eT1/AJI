@@ -4,7 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="aea9f214-0fc3-45be-8fa4-0e2b626b7c54" name="Changes" comment="" />
+    <list default="true" id="aea9f214-0fc3-45be-8fa4-0e2b626b7c54" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Zadanie 2/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/Zadanie 2/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Zadanie 2/scripts.js" beforeDir="false" afterPath="$PROJECT_DIR$/Zadanie 2/scripts.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Zadanie 2/theme.css" beforeDir="false" afterPath="$PROJECT_DIR$/Zadanie 2/theme.css" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -43,6 +48,8 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultAutoModeForALLUsers.v1": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "git-widget-placeholder": "Zadanie2",
     "ignore.virus.scanning.warn.message": "true",
     "junie.onboarding.icon.badge.shown": "true",
@@ -59,7 +66,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-3aa1da707db6-JavaScript-WS-252.26830.93" />
+        <option value="bundled-js-predefined-d6986cc7102b-3aa1da707db6-JavaScript-WS-252.27397.92" />
       </set>
     </attachedChunks>
   </component>
@@ -72,6 +79,7 @@
       <updated>1760038557688</updated>
       <workItem from="1760038558925" duration="3822000" />
       <workItem from="1761070718521" duration="2537000" />
+      <workItem from="1761407268104" duration="1380000" />
     </task>
     <servers />
   </component>
@@ -83,8 +91,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/Zadanie 2/scripts.js</url>
-          <line>9</line>
-          <properties lambdaOrdinal="-1" />
+          <line>8</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
       </breakpoints>

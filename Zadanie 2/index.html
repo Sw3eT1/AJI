@@ -1,52 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <title>MyTODO App</title>
+
+    <!-- Bootstrap -->
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"
           integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
           crossorigin="anonymous">
 
-    <link rel="stylesheet"
-          type="text/css" href="theme.css">
-    <script src="scripts.js"></script>
-    <title>MyTODO App</title>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" type="text/css" href="theme.css">
+
+    <script src="scripts.js" defer></script>
 </head>
-<body>
-    <h1>MyNotes</h1>
-    <div id="todoListView"></div>
-    <form id="inputForm">
-        <label for="inputTitle">Title</label>
-        <input type="text" id="inputTitle"/>
+<body class="bg-light">
 
-        <label for="inputDescription">Description</label>
-        <input type="text" id="inputDescription"/>
+<div class="container my-5">
+    <h1 class="text-center mb-4">My Notes</h1>
 
-        <label for="inputPlace">Place</label>
-        <input type="text" id="inputPlace"/>
+    <!-- FORM -->
+    <form id="inputForm" class="card p-3 mb-4 shadow-sm">
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label for="inputTitle">Title</label>
+                <input type="text" id="inputTitle" class="form-control" placeholder="Enter title">
+            </div>
 
-        <label for="inputDate">Due date</label>
-        <input type="date" id="inputDate"/>
+            <div class="form-group col-md-3">
+                <label for="inputDescription">Description</label>
+                <input type="text" id="inputDescription" class="form-control" placeholder="Enter description">
+            </div>
 
-        <input type="button" value="add"
-               onclick="addTodo()"/>
+            <div class="form-group col-md-2">
+                <label for="inputPlace">Place</label>
+                <input type="text" id="inputPlace" class="form-control" placeholder="Where?">
+            </div>
+
+            <div class="form-group col-md-2">
+                <label for="inputDate">Due date</label>
+                <input type="date" id="inputDate" class="form-control">
+            </div>
+
+            <div class="form-group col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-primary btn-block" onclick="addTodo()">Add</button>
+            </div>
+        </div>
     </form>
-    <div>
-        <label for="inputSearch">Search</label>
-        <input type="text" id="inputSearch" placeholder="Type Your seach here..."/>
+
+    <!-- SEARCH -->
+    <div class="input-group mb-4">
+        <div class="input-group-prepend">
+            <span class="input-group-text">Search</span>
+        </div>
+        <label for="inputSearch"></label><input type="text" id="inputSearch" class="form-control" placeholder="Type your search here...">
     </div>
 
+    <!-- TABLE -->
+    <table id="todoListView" class="table table-striped table-bordered shadow-sm">
+        <thead class="thead-dark">
+        <tr>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Place</th>
+            <th>Due Date</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Rows will be generated dynamically -->
+        </tbody>
+    </table>
+</div>
 
-
-
-<!--Scripts for bootstrap-->
-    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
-            integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
-            crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
-            integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
-            crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js"
-            integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
-            crossorigin="anonymous"></script>
+<!-- Bootstrap scripts -->
+<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+        integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js"
+        integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+        crossorigin="anonymous"></script>
 </body>
 </html>
