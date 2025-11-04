@@ -2,6 +2,9 @@ const BIN_ID = '68fcfc61d0ea881f40bb3184';
 const API_KEY = '$2a$10$UfZ4hW99G4WeXM6YCi9usOAIzwMUoEWNyJHpObNEj/hKulP3wXipW';
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
+const GROQ_API_KEY = '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'; 
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
 let todoList = [];
 
 let initList = function () {
@@ -80,6 +83,10 @@ let updateTodoList = function () {
         tdPlace.textContent = todo.place;
         row.appendChild(tdPlace);
 
+        const tdCategory = document.createElement("td");
+        tdCategory.textContent = todo.category || 'Brak'; 
+        row.appendChild(tdCategory);
+
         const tdDate = document.createElement("td");
         const date = new Date(todo.dueDate);
         tdDate.textContent = date.toLocaleDateString();
@@ -97,13 +104,73 @@ let updateTodoList = function () {
     });
 };
 
+/**
+ * Używa API Groq do automatycznej kategoryzacji zadania.
+ * @param {string} title Tytuł zadania
+ * @param {string} description Opis zadania
+ * @returns {Promise<string>} Nazwa kategorii (np. "Uczelnia", "Domowe", "Praca", "Inne")
+ */
+async function getCategoryFromGroq(title, description) {
+
+    const payload = {
+        model: "llama-3.1-8b-instant", 
+        messages: [
+            {
+                role: "system",
+                content: "Jesteś asystentem kategoryzującym. Twoim zadaniem jest przypisanie zadania do jednej z czterech kategorii: Uczelnia, Domowe, Praca, Inne. Twoja odpowiedź musi składać się *tylko i wyłącznie* z jednego słowa będącego nazwą kategorii (np. 'Uczelnia')."
+            },
+            {
+                role: "user",
+                content: `Sklasyfikuj to zadanie:\nTytuł: ${title}\nOpis: ${description}`
+            }
+        ],
+        temperature: 0.0, 
+        max_tokens: 10
+    };
+
+    try {
+        const response = await fetch(GROQ_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${GROQ_API_KEY}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.json(); 
+            console.error("Szczegółowa odpowiedź błędu z Groq:", errorBody);
+            const errorMessage = errorBody.error ? errorBody.error.message : `HTTP status ${response.status}`;
+            throw new Error(`Błąd API Groq: ${errorMessage}`);
+        }
+
+        const data = await response.json();
+        const category = data.choices[0].message.content.trim().replace(/[".,]/g, ''); 
+        
+        const validCategories = ["Uczelnia", "Domowe", "Praca", "Inne"];
+        
+        if (validCategories.includes(category)) {
+            console.log(`Groq skategoryzował jako: ${category}`);
+            return category;
+        } else {
+            console.warn(`Groq zwrócił nieoczekiwaną kategorię: "${category}". Używam "Inne".`);
+            return "Inne"; 
+        }
+
+    } catch (error) {
+        console.error("Błąd podczas pobierania kategorii z Groq:", error);
+        return "Inne"; 
+    }
+}
+
 let deleteTodo = function (index) {
     todoList.splice(index, 1);
     updateJSONbin();
     updateTodoList();
 };
 
-let addTodo = function () {
+let addTodo = async function () { 
     const inputTitle = document.getElementById("inputTitle");
     const inputDescription = document.getElementById("inputDescription");
     const inputPlace = document.getElementById("inputPlace");
@@ -122,13 +189,31 @@ let addTodo = function () {
         return;
     }
 
+
+    const title = inputTitle.value;
+    const description = inputDescription.value;
+    
+  
+    const addButton = document.querySelector("#inputForm button[type='submit']");
+    addButton.disabled = true;
+    addButton.textContent = "Kategoryzuję...";
+
+
+    const category = await getCategoryFromGroq(title, description);
+
+   
+    addButton.disabled = false;
+    addButton.textContent = "Add";
+
+    
     const newTodo = {
-        title: inputTitle.value,
-        description: inputDescription.value,
+        title: title,
+        description: description,
         place: inputPlace.value,
-        category: '',
+        category: category, 
         dueDate: selectedDate
     };
+   
 
     todoList.push(newTodo);
     document.getElementById("inputForm").reset();
@@ -136,9 +221,9 @@ let addTodo = function () {
     updateTodoList();
 };
 
-document.getElementById("inputForm").addEventListener("submit", function(event) {
+document.getElementById("inputForm").addEventListener("submit", async function(event) { 
     event.preventDefault();
-    addTodo();
+    await addTodo(); 
 });
 
 window.addEventListener("DOMContentLoaded", () => {
