@@ -9,6 +9,11 @@ import multer from "multer";
 import fs from "fs";
 import csv from "csv-parser";
 
+
+console.log("DB_NAME:", process.env.DB_NAME);
+console.log("DB_HOST:", process.env.DB_HOST);
+console.log("DB_USER:", process.env.DB_USER);
+
 const app = express();
 app.use(express.json());
 
@@ -223,58 +228,35 @@ app.get('/orders/:id', async (req, res) => {
 });
 
 // POST /orders - dodanie zamówienia
-app.post('/orders',auth, async (req, res) => {
+app.post('/orders', auth, async (req, res) => {
     try {
-        const { username, email, phone, items } = req.body;
+        const { items } = req.body;
+        const userId = req.user.id;
 
-        if (!username || !email || !phone) {
+        if (!Array.isArray(items) || items.length === 0) {
             return res.status(StatusCodes.BAD_REQUEST).json({
-                message: 'Username, email and phone are required'
+                message: 'Order items are required'
             });
         }
 
-        if (!Array.isArray(items) || items.length === 0) {
-            return res
-                .status(StatusCodes.BAD_REQUEST)
-                .json({ message: 'Order items are required' });
-        }
-
-        // Walidacja pozycji i produktów
         for (const item of items) {
-            if (
-                !item.product_id ||
-                !Number.isInteger(item.quantity) ||
-                item.quantity <= 0
-            ) {
+            if (!item.product_id || !Number.isInteger(item.quantity) || item.quantity <= 0) {
                 return res.status(StatusCodes.BAD_REQUEST).json({
-                    message:
-                        'Each item must have valid product_id and positive integer quantity'
-                });
-            }
-
-            const product = await db('products')
-                .where({ id: item.product_id })
-                .first();
-            if (!product) {
-                return res.status(StatusCodes.BAD_REQUEST).json({
-                    message: `Product with id ${item.product_id} does not exist`
+                    message: 'Invalid product data'
                 });
             }
         }
 
-        // status startowy = UNCONFIRMED
         const status = await db('order_statuses')
-            .where({ name: ORDER_STATUS.UNCONFIRMED })
+            .where({ name: 'UNCONFIRMED' })
             .first();
 
         const [orderId] = await db('orders').insert({
-            username,
-            email,
-            phone,
+            user_id: userId,
             status_id: status.id
         });
 
-        const orderItems = items.map((i) => ({
+        const orderItems = items.map(i => ({
             order_id: orderId,
             product_id: i.product_id,
             quantity: i.quantity
@@ -282,15 +264,107 @@ app.post('/orders',auth, async (req, res) => {
 
         await db('order_items').insert(orderItems);
 
-        const newOrder = await db('orders').where({ id: orderId }).first();
-        res.status(StatusCodes.CREATED).json(newOrder);
+        res.status(StatusCodes.CREATED).json({ id: orderId });
     } catch (err) {
         console.error(err);
-        res
-            .status(StatusCodes.INTERNAL_SERVER_ERROR)
-            .json({ message: 'Error creating order' });
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: 'Error creating order'
+        });
     }
 });
+
+
+// POST /orders/:id/opinions - dodanie opini do zamowienia
+app.post("/orders/:id/opinions", auth, async (req, res) => {
+    try {
+        const { rating, content } = req.body;
+        const orderId = req.params.id;
+        const userId = req.user.id;
+
+        if (!rating || rating < 1 || rating > 5 || !content) {
+            return res.status(400).json({
+                message: "Invalid rating or content"
+            });
+        }
+
+        const order = await db("orders").where({ id: orderId }).first();
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        if (order.user_id !== userId) {
+            return res.status(403).json({
+                message: "You can only add opinion to your own order"
+            });
+        }
+
+        const status = await db("order_statuses")
+            .where({ id: order.status_id })
+            .first();
+
+        if (!["COMPLETED", "CANCELLED"].includes(status.name)) {
+            return res.status(400).json({
+                message: "Opinion can be added only to COMPLETED or CANCELLED order"
+            });
+        }
+
+        await db("opinions").insert({
+            order_id: orderId,
+            rating,
+            content
+        });
+
+        res.status(201).json({
+            message: "Opinion added successfully"
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+            message: "Error adding opinion"
+        });
+    }
+});
+
+// GET /orders/:id/opinions - pobranie opinii dla zamówienia
+
+app.get("/orders/:id/opinions", auth, async (req, res) => {
+    try {
+        const orderId = req.params.id;
+        const userId = req.user.id;
+
+        // sprawdzamy czy zamówienie istnieje
+        const order = await db("orders").where({ id: orderId }).first();
+        if (!order) {
+            return res.status(StatusCodes.NOT_FOUND).json({
+                message: "Order not found"
+            });
+        }
+
+        // zabezpieczenie: tylko właściciel zamówienia lub pracownik
+        if (order.user_id !== userId && req.user.role !== "PRACOWNIK") {
+            return res.status(StatusCodes.FORBIDDEN).json({
+                message: "You are not allowed to view opinions of this order"
+            });
+        }
+
+        // pobieramy opinie
+        const opinions = await db("opinions")
+            .where({ order_id: orderId })
+            .orderBy("created_at", "desc");
+
+        res.json({
+            order_id: orderId,
+            opinions
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: "Error fetching order opinions"
+        });
+    }
+});
+
 
 // GET /orders/status/:statusId - zamówienia wg statusu
 app.get('/orders/status/:statusId', async (req, res) => {
@@ -299,57 +373,74 @@ app.get('/orders/status/:statusId', async (req, res) => {
 });
 
 // PATCH /orders/:id - zmiana stanu zamówienia
-app.patch('/orders/:id',auth, async (req, res) => {
-    const { status_id } = req.body;
-    const id = req.params.id;
+app.patch('/orders/:id', auth, async (req, res) => {
+    try {
+        const { status } = req.body;   // <-- TERAZ PRZYJMUJEMY NAZWĘ
+        const id = req.params.id;
 
-    const order = await db('orders').where({ id }).first();
-    if (!order) {
-        return res
-            .status(StatusCodes.NOT_FOUND)
-            .json({ message: 'Order not found' });
-    }
+        if (!status) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: "Status is required"
+            });
+        }
 
-    const newStatus = await db('order_statuses')
-        .where({ id: status_id })
-        .first();
-    if (!newStatus) {
-        return res
-            .status(StatusCodes.BAD_REQUEST)
-            .json({ message: 'Invalid status_id' });
-    }
+        const order = await db('orders').where({ id }).first();
+        if (!order) {
+            return res
+                .status(StatusCodes.NOT_FOUND)
+                .json({ message: 'Order not found' });
+        }
 
-    // proste reguły zmian statusów
-    const current = await db('order_statuses')
-        .where({ id: order.status_id })
-        .first();
+        const newStatus = await db('order_statuses')
+            .where({ name: status })
+            .first();
 
-    if (current.name === ORDER_STATUS.CANCELLED) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-            message: 'Cannot change status of a CANCELLED order'
+        if (!newStatus) {
+            return res
+                .status(StatusCodes.BAD_REQUEST)
+                .json({ message: 'Invalid status name' });
+        }
+
+        const current = await db('order_statuses')
+            .where({ id: order.status_id })
+            .first();
+
+        // Nie można zmienić anulowanego
+        if (current.name === ORDER_STATUS.CANCELLED) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: 'Cannot change status of a CANCELLED order'
+            });
+        }
+
+        // Nie cofamy z COMPLETED
+        if (
+            current.name === ORDER_STATUS.COMPLETED &&
+            newStatus.name !== ORDER_STATUS.COMPLETED
+        ) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: 'Cannot revert COMPLETED order to previous state'
+            });
+        }
+
+        await db('orders').where({ id }).update({
+            status_id: newStatus.id,
+            approved_at:
+                newStatus.name === ORDER_STATUS.CONFIRMED && !order.approved_at
+                    ? db.fn.now()
+                    : order.approved_at
+        });
+
+        const updated = await db('orders').where({ id }).first();
+        res.json(updated);
+
+    } catch (err) {
+        console.error(err);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: "Error updating order status"
         });
     }
-
-    if (
-        current.name === ORDER_STATUS.COMPLETED &&
-        newStatus.name !== ORDER_STATUS.COMPLETED
-    ) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-            message: 'Cannot revert COMPLETED order to previous state'
-        });
-    }
-
-    await db('orders').where({ id }).update({
-        status_id: status_id,
-        approved_at:
-            newStatus.name === ORDER_STATUS.CONFIRMED && !order.approved_at
-                ? db.fn.now()
-                : order.approved_at
-    });
-
-    const updated = await db('orders').where({ id }).first();
-    res.json(updated);
 });
+
 
 // ---------- USERS ----------
 app.post("/login", async (req, res) => {
