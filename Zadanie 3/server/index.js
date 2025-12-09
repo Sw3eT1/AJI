@@ -3,9 +3,34 @@ import db from './db.js';
 import { StatusCodes, ReasonPhrases } from 'http-status-codes';
 import axios from 'axios';
 import 'dotenv/config';
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 const app = express();
 app.use(express.json());
+
+function auth(req, res, next) {
+    const header = req.headers.authorization;
+
+    if (!header) {
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+            message: "No token provided"
+        });
+    }
+
+    const token = header.split(" ")[1];
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded; // zapisujemy użytkownika w req
+        next();
+    } catch {
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+            message: "Invalid token"
+        });
+    }
+}
+
 
 const ORDER_STATUS = {
     UNCONFIRMED: 'UNCONFIRMED',
@@ -38,7 +63,7 @@ app.get('/products/:id', async (req, res) => {
 });
 
 // POST /products - dodanie produktu
-app.post('/products', async (req, res) => {
+app.post('/products', auth, async (req, res) => {
     try {
         const { name, description, unit_price, unit_weight, category_id } = req.body;
 
@@ -87,7 +112,7 @@ app.post('/products', async (req, res) => {
 });
 
 // PUT /products/:id - aktualizacja
-app.put('/products/:id', async (req, res) => {
+app.put('/products/:id',auth, async (req, res) => {
     const { name, description, unit_price, unit_weight, category_id } = req.body;
     const id = req.params.id;
 
@@ -194,7 +219,7 @@ app.get('/orders/:id', async (req, res) => {
 });
 
 // POST /orders - dodanie zamówienia
-app.post('/orders', async (req, res) => {
+app.post('/orders',auth, async (req, res) => {
     try {
         const { username, email, phone, items } = req.body;
 
@@ -270,7 +295,7 @@ app.get('/orders/status/:statusId', async (req, res) => {
 });
 
 // PATCH /orders/:id - zmiana stanu zamówienia
-app.patch('/orders/:id', async (req, res) => {
+app.patch('/orders/:id',auth, async (req, res) => {
     const { status_id } = req.body;
     const id = req.params.id;
 
@@ -321,6 +346,72 @@ app.patch('/orders/:id', async (req, res) => {
     const updated = await db('orders').where({ id }).first();
     res.json(updated);
 });
+
+// ---------- USERS ----------
+app.post("/login", async (req, res) => {
+    const { username, password } = req.body;
+
+    const user = await db("users").where({ username }).first();
+    if (!user) {
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+            message: "Invalid login data"
+        });
+    }
+
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) {
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+            message: "Invalid login data"
+        });
+    }
+
+    const accessToken = jwt.sign(
+        { id: user.id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: "1h" }
+    );
+
+    const refreshToken = jwt.sign(
+        { id: user.id },
+        process.env.JWT_REFRESH_SECRET,
+        { expiresIn: "7d" }
+    );
+
+    res.json({
+        accessToken,
+        refreshToken
+    });
+});
+
+app.post("/refresh", (req, res) => {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+            message: "No refresh token provided"
+        });
+    }
+
+    try {
+        const decoded = jwt.verify(
+            refreshToken,
+            process.env.JWT_REFRESH_SECRET
+        );
+
+        const newAccessToken = jwt.sign(
+            { id: decoded.id },
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
+        );
+
+        res.json({ accessToken: newAccessToken });
+    } catch {
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+            message: "Invalid refresh token"
+        });
+    }
+});
+
 
 // ---------- GLOBAL ERROR FALLBACK ----------
 
