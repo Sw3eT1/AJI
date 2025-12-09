@@ -5,6 +5,9 @@ import axios from 'axios';
 import 'dotenv/config';
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import multer from "multer";
+import fs from "fs";
+import csv from "csv-parser";
 
 const app = express();
 app.use(express.json());
@@ -31,6 +34,7 @@ function auth(req, res, next) {
     }
 }
 
+const upload = multer({ dest: "uploads/" });
 
 const ORDER_STATUS = {
     UNCONFIRMED: 'UNCONFIRMED',
@@ -408,6 +412,98 @@ app.post("/refresh", (req, res) => {
     } catch {
         return res.status(StatusCodes.UNAUTHORIZED).json({
             message: "Invalid refresh token"
+        });
+    }
+});
+
+// ---------- INIT FROM FILE ----------
+
+app.post("/init", auth, upload.single("file"), async (req, res) => {
+    try {
+        // 1. SPRAWDZAMY CZY SĄ JUŻ PRODUKTY
+        const existingProducts = await db("products")
+            .count("id as count")
+            .first();
+
+        if (Number(existingProducts.count) > 0) {
+            return res.status(StatusCodes.CONFLICT).json({
+                message: "Products already exist in database. Initialization forbidden."
+            });
+        }
+
+        // 2. SPRAWDZAMY CZY JEST PLIK
+        if (!req.file) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: "No file uploaded"
+            });
+        }
+
+        const filePath = req.file.path;
+        const ext = req.file.originalname.split(".").pop().toLowerCase();
+
+        let products = [];
+
+        // 3. OBSŁUGA JSON
+        if (ext === "json") {
+            const rawData = fs.readFileSync(filePath);
+            products = JSON.parse(rawData);
+        }
+
+        // 4. OBSŁUGA CSV
+        else if (ext === "csv") {
+            await new Promise((resolve, reject) => {
+                fs.createReadStream(filePath)
+                    .pipe(csv())
+                    .on("data", (data) => products.push(data))
+                    .on("end", resolve)
+                    .on("error", reject);
+            });
+        } else {
+            fs.unlinkSync(filePath);
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: "Invalid file format. Only CSV or JSON allowed."
+            });
+        }
+
+        // 5. WALIDACJA DANYCH
+        for (const p of products) {
+            if (
+                !p.name ||
+                !p.description ||
+                !p.unit_price ||
+                !p.unit_weight ||
+                !p.category_id
+            ) {
+                fs.unlinkSync(filePath);
+                return res.status(StatusCodes.BAD_REQUEST).json({
+                    message: "Invalid product data in file"
+                });
+            }
+        }
+
+        // 6. ZAPIS DO BAZY
+        for (const p of products) {
+            await db("products").insert({
+                name: p.name,
+                description: p.description,
+                unit_price: p.unit_price,
+                unit_weight: p.unit_weight,
+                category_id: p.category_id
+            });
+        }
+
+        // 7. USUWAMY PLIK TYMCZASOWY
+        fs.unlinkSync(filePath);
+
+        // 8. SUKCES
+        res.status(StatusCodes.OK).json({
+            message: "Database initialized successfully with products",
+            count: products.length
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: "Error initializing database"
         });
     }
 });
