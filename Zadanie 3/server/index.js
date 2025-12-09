@@ -1,6 +1,8 @@
 import express from 'express';
 import db from './db.js';
 import { StatusCodes, ReasonPhrases } from 'http-status-codes';
+import axios from 'axios';
+import 'dotenv/config';
 
 const app = express();
 app.use(express.json());
@@ -13,7 +15,7 @@ const ORDER_STATUS = {
 };
 
 app.get('/', (req, res) => {
-    res.send('✅ API działa poprawnie!');
+    res.send('API działa poprawnie!');
 });
 
 // ---------- PRODUCTS ----------
@@ -328,6 +330,73 @@ app.use((err, req, res, next) => {
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
         .json({ message: ReasonPhrases.INTERNAL_SERVER_ERROR });
 });
+
+// ---------- SEO PRODUCT DESCRIPTION WITH GROQ LLM (D1 PREMIUM) ----------
+
+app.get('/products/:id/seo-description', async (req, res) => {
+    try {
+        const product = await db('products')
+            .join('categories', 'products.category_id', 'categories.id')
+            .select(
+                'products.id',
+                'products.name',
+                'products.description',
+                'products.unit_price',
+                'products.unit_weight',
+                'categories.name as category'
+            )
+            .where('products.id', req.params.id)
+            .first();
+
+        if (!product) {
+            return res.status(StatusCodes.NOT_FOUND).json({
+                message: 'Product not found'
+            });
+        }
+
+        // PROMPT DLA MODELU
+        const prompt = `
+            Wygeneruj profesjonalny opis SEO w formacie HTML dla produktu:
+            Nazwa: ${product.name}
+            Opis: ${product.description}
+            Cena: ${product.unit_price} zł
+            Waga: ${product.unit_weight} kg
+            Kategoria: ${product.category}
+            
+            Zwróć tylko czysty kod HTML.
+            Użyj znaczników: <h1>, <h2>, <p>, <ul>, <li>.
+            Opis ma być marketingowy, naturalny i zoptymalizowany pod SEO.
+        `;
+
+        const response = await axios.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            {
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    { role: 'system', content: 'Jesteś specjalistą SEO e-commerce.' },
+                    { role: 'user', content: prompt }
+                ],
+                temperature: 0.7
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        const seoHtml = response.data.choices[0].message.content;
+
+        res.status(StatusCodes.OK).send(seoHtml);
+    } catch (err) {
+        console.error(err.response?.data || err.message);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: 'Error generating SEO description with AI'
+        });
+    }
+});
+
 
 const PORT = 3000;
 app.listen(PORT, () =>
