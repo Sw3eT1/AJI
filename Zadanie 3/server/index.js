@@ -102,15 +102,14 @@ app.post('/products', auth, async (req, res) => {
             });
         }
 
-        const [id] = await db('products').insert({
+        const [newProduct] = await db('products').insert({
             name,
             description,
             unit_price,
             unit_weight,
             category_id
-        });
-
-        const newProduct = await db('products').where({ id }).first();
+        })
+            .returning('*');
         res.status(StatusCodes.CREATED).json(newProduct);
     } catch (err) {
         console.error(err);
@@ -229,44 +228,79 @@ app.get('/orders/:id', async (req, res) => {
 
 // POST /orders - dodanie zamówienia
 app.post('/orders', auth, async (req, res) => {
+    const trx = await db.transaction(); // ✅ TRANSAKCJA
+
     try {
         const { items } = req.body;
         const userId = req.user.id;
 
         if (!Array.isArray(items) || items.length === 0) {
+            await trx.rollback();
             return res.status(StatusCodes.BAD_REQUEST).json({
                 message: 'Order items are required'
             });
         }
 
+        // WALIDACJA + SPRAWDZENIE CZY PRODUKTY ISTNIEJĄ
         for (const item of items) {
-            if (!item.product_id || !Number.isInteger(item.quantity) || item.quantity <= 0) {
+            if (
+                !item.product_id ||
+                !Number.isInteger(item.quantity) ||
+                item.quantity <= 0
+            ) {
+                await trx.rollback();
                 return res.status(StatusCodes.BAD_REQUEST).json({
                     message: 'Invalid product data'
                 });
             }
+
+            const product = await trx('products')
+                .where({ id: item.product_id })
+                .first();
+
+            if (!product) {
+                await trx.rollback();
+                return res.status(StatusCodes.BAD_REQUEST).json({
+                    message: `Product with id ${item.product_id} does not exist`
+                });
+            }
         }
 
-        const status = await db('order_statuses')
+        const status = await trx('order_statuses')
             .where({ name: 'UNCONFIRMED' })
             .first();
 
-        const [orderId] = await db('orders').insert({
-            user_id: userId,
-            status_id: status.id
-        });
+        // TWORZENIE ORDERA
+        const [newOrder] = await trx('orders')
+            .insert({
+                user_id: userId,
+                status_id: status.id
+            })
+            .returning('*');
 
+        const orderId = newOrder.id;
+
+        // TWORZENIE ORDER_ITEMS
         const orderItems = items.map(i => ({
             order_id: orderId,
             product_id: i.product_id,
             quantity: i.quantity
         }));
 
-        await db('order_items').insert(orderItems);
+        await trx('order_items').insert(orderItems);
 
-        res.status(StatusCodes.CREATED).json({ id: orderId });
+        // COMMIT = ZAPIS WSZYSTKIEGO
+        await trx.commit();
+
+        res.status(StatusCodes.CREATED).json({
+            id: orderId,
+            message: "Order created successfully"
+        });
+
     } catch (err) {
+        await trx.rollback();
         console.error(err);
+
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
             message: 'Error creating order'
         });
