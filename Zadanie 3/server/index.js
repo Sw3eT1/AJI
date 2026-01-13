@@ -8,6 +8,7 @@ import bcrypt from "bcrypt";
 import multer from "multer";
 import fs from "fs";
 import csv from "csv-parser";
+import cors from "cors";
 
 
 console.log("DB_NAME:", process.env.DB_NAME);
@@ -16,6 +17,13 @@ console.log("DB_USER:", process.env.DB_USER);
 
 const app = express();
 app.use(express.json());
+
+app.use(cors({
+    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
 
 function auth(req, res, next) {
     const header = req.headers.authorization;
@@ -708,6 +716,74 @@ app.get('/products/:id/seo-description', async (req, res) => {
         });
     }
 });
+
+// ---------- USERS ----------
+
+app.post("/register", async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        // prosta walidacja
+        if (!username || !password) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: "Username and password are required"
+            });
+        }
+
+        const u = String(username).trim();
+        const p = String(password);
+
+        if (u.length < 3 || u.length > 30) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: "Username must be 3-30 characters long"
+            });
+        }
+
+        // litery/cyfry/_/.- (bez spacji)
+        if (!/^[a-zA-Z0-9_.-]+$/.test(u)) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: "Username may contain only letters, digits, _, . or -"
+            });
+        }
+
+        if (p.length < 4) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: "Password must be at least 4 characters long"
+            });
+        }
+
+        // czy istnieje?
+        const existing = await db("users").where({ username: u }).first();
+        if (existing) {
+            return res.status(StatusCodes.CONFLICT).json({
+                message: "User with this username already exists"
+            });
+        }
+
+        // hash hasła
+        const hash = await bcrypt.hash(p, 10);
+
+        const [created] = await db("users")
+            .insert({
+                username: u,
+                password: hash,
+                role: "KLIENT"
+            })
+            .returning(["id", "username", "role"]);
+
+        // użytkownik NIE jest zalogowany po rejestracji
+        return res.status(StatusCodes.CREATED).json({
+            message: "Registered successfully. Please log in.",
+            user: created
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: "Error registering user"
+        });
+    }
+});
+
 
 
 const PORT = 3000;
