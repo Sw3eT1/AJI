@@ -1,0 +1,88 @@
+[
+    {
+      "name": "Słuchawki bezprzewodowe XSound Pro",
+      "description": "Bezprzewodowe słuchawki Bluetooth z redukcją szumów i etui ładującym.",
+      "unit_price": 249.99,
+      "unit_weight": 0.350,
+      "category_id": 1
+    },
+    {
+      "name": "Laptop Sleeve 15.6\"",
+      "description": "Etui ochronne na laptopa, wodoodporne, z dodatkową kieszenią.",
+      "unit_price": 59.99,
+      "unit_weight": 0.420,
+      "category_id": 1
+    },
+    {
+      "name": "Mysz bezprzewodowa SilentClick",
+      "description": "Cicha mysz bezprzewodowa z regulacją DPI, idealna do biura.",
+      "unit_price": 89.90,
+      "unit_weight": 0.180,
+      "category_id": 1
+    },
+    {
+      "name": "Klawiatura mechaniczna RGB",
+      "description": "Klawiatura mechaniczna z podświetleniem RGB i przełącznikami Blue.",
+      "unit_price": 329.00,
+      "unit_weight": 1.200,
+      "category_id": 1
+    },
+
+    {
+      "name": "Clean Code – Robert C. Martin",
+      "description": "Klasyczna książka o dobrych praktykach programowania.",
+      "unit_price": 99.90,
+      "unit_weight": 0.700,
+      "category_id": 2
+    },
+    {
+      "name": "Władca Pierścieni: Drużyna Pierścienia",
+      "description": "Pierwszy tom epickiej sagi fantasy J.R.R. Tolkiena.",
+      "unit_price": 49.99,
+      "unit_weight": 0.650,
+      "category_id": 2
+    },
+    {
+      "name": "Atomic Habits",
+      "description": "Praktyczny poradnik o budowaniu dobrych nawyków.",
+      "unit_price": 44.90,
+      "unit_weight": 0.480,
+      "category_id": 2
+    },
+    {
+      "name": "JavaScript. The Definitive Guide",
+      "description": "Kompleksowy przewodnik po języku JavaScript.",
+      "unit_price": 129.00,
+      "unit_weight": 0.900,
+      "category_id": 2
+    },
+
+    {
+      "name": "Bluza z kapturem Classic",
+      "description": "Bawełniana bluza z kapturem, unisex, kolor czarny.",
+      "unit_price": 149.99,
+      "unit_weight": 0.800,
+      "category_id": 3
+    },
+    {
+      "name": "Koszulka bawełniana Basic Tee",
+      "description": "Klasyczna koszulka bawełniana, regular fit.",
+      "unit_price": 39.99,
+      "unit_weight": 0.250,
+      "category_id": 3
+    },
+    {
+      "name": "Kurtka zimowa Urban",
+      "description": "Ocieplana kurtka zimowa z kapturem, odporna na wiatr i deszcz.",
+      "unit_price": 399.00,
+      "unit_weight": 1.600,
+      "category_id": 3
+    },
+    {
+      "name": "Jeansy Slim Fit",
+      "description": "Jeansy męskie slim fit, klasyczny niebieski kolor.",
+      "unit_price": 199.90,
+      "unit_weight": 0.900,
+      "category_id": 3
+    }
+]

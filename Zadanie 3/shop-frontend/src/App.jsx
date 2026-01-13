@@ -40,8 +40,22 @@ export default function App() {
                                     </ProtectedRoute>
                                 }
                             />
-                            <Route path="/orders" element={<OrdersPage />} />
-                            <Route path="/orders/:id" element={<OrderDetailsPage />} />
+                            <Route
+                                path="/orders"
+                                element={
+                                    <ProtectedRoute>
+                                        <OrdersPage />
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route
+                                path="/orders/:id"
+                                element={
+                                    <ProtectedRoute>
+                                        <OrderDetailsPage />
+                                    </ProtectedRoute>
+                                }
+                            />
                             <Route
                                 path="/init"
                                 element={
