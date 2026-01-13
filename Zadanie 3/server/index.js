@@ -201,37 +201,73 @@ app.get('/status', async (req, res) => {
 // ---------- ORDERS ----------
 
 // GET /orders - wszystkie zamówienia
-app.get('/orders', async (req, res) => {
-    const orders = await db('orders');
-    res.json(orders);
+app.get('/orders', auth, async (req, res) => {
+    try {
+        const { id: userId, role } = req.user;
+
+        if (role === "PRACOWNIK") {
+            const orders = await db("orders").orderBy("created_at", "desc");
+            return res.json(orders);
+        }
+
+        const orders = await db("orders")
+            .where({ user_id: userId })
+            .orderBy("created_at", "desc");
+
+        return res.json(orders);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error fetching orders" });
+    }
 });
 
+
 // GET /orders/user/:username - zamówienia danego usera
-app.get('/orders/user/:username', async (req, res) => {
-    const orders = await db('orders').where({ username: req.params.username });
+app.get('/orders/user/:username', auth, async (req, res) => {
+    const requested = req.params.username;
+    const { username, role } = req.user;
+
+    if (role !== "PRACOWNIK" && requested !== username) {
+        return res.status(StatusCodes.FORBIDDEN).json({ message: "Forbidden" });
+    }
+
+    const orders = await db("orders")
+        .join("users", "orders.user_id", "users.id")
+        .where("users.username", requested)
+        .select("orders.*")
+        .orderBy("orders.created_at", "desc");
+
     res.json(orders);
 });
 
 // GET /orders/:id - jedno zamówienie z pozycjami
-app.get('/orders/:id', async (req, res) => {
-    const order = await db('orders').where({ id: req.params.id }).first();
-    if (!order) {
-        return res
-            .status(StatusCodes.NOT_FOUND)
-            .json({ message: 'Order not found' });
+app.get('/orders/:id', auth, async (req, res) => {
+    try {
+        const order = await db('orders')
+            .join('order_statuses', 'orders.status_id', 'order_statuses.id')
+            .select('orders.*', 'order_statuses.name as status')
+            .where('orders.id', req.params.id)
+            .first();
+
+        if (!order) {
+            return res.status(StatusCodes.NOT_FOUND).json({ message: 'Order not found' });
+        }
+
+        const { id: userId, role } = req.user;
+        if (role !== "PRACOWNIK" && order.user_id !== userId) {
+            return res.status(StatusCodes.FORBIDDEN).json({ message: "Forbidden" });
+        }
+
+        const items = await db('order_items')
+            .join('products', 'order_items.product_id', 'products.id')
+            .select('order_items.id', 'order_items.quantity', 'products.name', 'products.unit_price')
+            .where('order_items.order_id', order.id);
+
+        res.json({ ...order, items });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Error fetching order" });
     }
-
-    const items = await db('order_items')
-        .join('products', 'order_items.product_id', 'products.id')
-        .select(
-            'order_items.id',
-            'order_items.quantity',
-            'products.name',
-            'products.unit_price'
-        )
-        .where('order_items.order_id', order.id);
-
-    res.json({ ...order, items });
 });
 
 // POST /orders - dodanie zamówienia
@@ -409,9 +445,20 @@ app.get("/orders/:id/opinions", auth, async (req, res) => {
 
 
 // GET /orders/status/:statusId - zamówienia wg statusu
-app.get('/orders/status/:statusId', async (req, res) => {
-    const orders = await db('orders').where({ status_id: req.params.statusId });
-    res.json(orders);
+app.get('/orders/status/:statusId', auth, async (req, res) => {
+    const { id: userId, role } = req.user;
+
+    if (role === "PRACOWNIK") {
+        const orders = await db("orders").where({ status_id: req.params.statusId });
+        return res.json(orders);
+    }
+
+    const orders = await db("orders").where({
+        status_id: req.params.statusId,
+        user_id: userId
+    });
+
+    return res.json(orders);
 });
 
 // PATCH /orders/:id - zmiana stanu zamówienia
@@ -503,7 +550,7 @@ app.post("/login", async (req, res) => {
     }
 
     const accessToken = jwt.sign(
-        { id: user.id, role: user.role },
+        { id: user.id, username: user.username, role: user.role },
         process.env.JWT_SECRET,
         { expiresIn: "1h" }
     );
@@ -516,36 +563,34 @@ app.post("/login", async (req, res) => {
 
     res.json({
         accessToken,
-        refreshToken
+        refreshToken,
+        user: { id: user.id, username: user.username, role: user.role }
     });
 });
 
-app.post("/refresh", (req, res) => {
+app.post("/refresh", async (req, res) => {
     const { refreshToken } = req.body;
-
     if (!refreshToken) {
-        return res.status(StatusCodes.UNAUTHORIZED).json({
-            message: "No refresh token provided"
-        });
+        return res.status(StatusCodes.UNAUTHORIZED).json({ message: "No refresh token provided" });
     }
 
     try {
-        const decoded = jwt.verify(
-            refreshToken,
-            process.env.JWT_REFRESH_SECRET
-        );
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+
+        const user = await db("users").where({ id: decoded.id }).first();
+        if (!user) {
+            return res.status(StatusCodes.UNAUTHORIZED).json({ message: "User not found" });
+        }
 
         const newAccessToken = jwt.sign(
-            { id: decoded.id },
+            { id: user.id, username: user.username, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: "1h" }
         );
 
         res.json({ accessToken: newAccessToken });
     } catch {
-        return res.status(StatusCodes.UNAUTHORIZED).json({
-            message: "Invalid refresh token"
-        });
+        return res.status(StatusCodes.UNAUTHORIZED).json({ message: "Invalid refresh token" });
     }
 });
 
@@ -681,7 +726,7 @@ app.get('/products/:id/seo-description', async (req, res) => {
             Opis: ${product.description}
             Cena: ${product.unit_price} zł
             Waga: ${product.unit_weight} kg
-            Kategoria: ${product.category}
+            Kategoria: ${product.category_id}
             
             Zwróć tylko czysty kod HTML.
             Użyj znaczników: <h1>, <h2>, <p>, <ul>, <li>.

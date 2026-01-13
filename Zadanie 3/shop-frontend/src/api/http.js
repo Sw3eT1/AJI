@@ -54,7 +54,11 @@ export function setupInterceptors(getAuthState, setAuthState, logout) {
                 isRefreshing = true;
                 try {
                     // backend: POST /refresh { refreshToken }
-                    const r = await axios.post(`${baseURL}/refresh`, { refreshToken });
+                    const r = await axios.post(
+                        `${baseURL}/refresh`,
+                        { refreshToken },
+                        { headers: { "Content-Type": "application/json" } }
+                    );
                     const newAccess = r.data?.accessToken;
 
                     if (!newAccess) throw new Error("No accessToken in refresh response");

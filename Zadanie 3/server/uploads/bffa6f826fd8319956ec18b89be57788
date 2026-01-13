@@ -1,0 +1,9 @@
+[
+  {
+    "name": "Gaming Keyboard",
+    "description": "RGB keyboard",
+    "unit_price": 299,
+    "unit_weight": 0.8,
+    "category_id": 1
+  }
+]

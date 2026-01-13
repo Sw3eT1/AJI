@@ -1,6 +1,15 @@
 import React, { useMemo, useState } from "react";
 import { http } from "../api/http";
 
+function stripHtmlTags(html) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+
+    return tmp.textContent
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
 export default function ProductEditModal({ product, categories, onClose, onSaved }) {
     const [form, setForm] = useState(() => ({
         name: product.name ?? "",
@@ -25,7 +34,7 @@ export default function ProductEditModal({ product, categories, onClose, onSaved
             // backend: GET /products/:id/seo-description
             const res = await http.get(`/products/${product.id}/seo-description`);
             const html = res.data;
-            setField("description", typeof html === "string" ? html : String(html));
+            setField("description", stripHtmlTags(html));
         } catch (e) {
             setServerError(e?.response?.data?.message || "Nie udało się zoptymalizować opisu.");
         } finally {

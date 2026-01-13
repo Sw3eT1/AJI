@@ -38,15 +38,10 @@ export function AuthProvider({ children }) {
     }, []);
 
     const login = async (username, password) => {
-        // backend: POST /login { username, password }
         const res = await http.post("/login", { username, password });
         const { accessToken, refreshToken, user } = res.data || {};
 
-        // Jeśli backend nie zwraca user/role, to spróbuj wywnioskować po username (admin -> employee)
-        const normalizedUser =
-            user || { username, role: username === "admin" ? "EMPLOYEE" : "CUSTOMER" };
-
-        setAuth({ accessToken, refreshToken, user: normalizedUser });
+        setAuth({ accessToken, refreshToken, user });
     };
 
     const value = useMemo(
@@ -56,7 +51,7 @@ export function AuthProvider({ children }) {
             login,
             logout,
             isLoggedIn: !!auth?.accessToken,
-            isEmployee: auth?.user?.role === "EMPLOYEE" || auth?.user?.username === "admin",
+            isEmployee: auth?.user?.role === "PRACOWNIK",
         }),
         [auth]
     );
